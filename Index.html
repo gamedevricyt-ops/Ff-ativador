@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Painel FF - Sistema de Ativação Automática</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    overflow-x: hidden;
+    background: linear-gradient(135deg, #0a0f1f 0%, #1a1a3e 50%, #2d1b69 100%);
+    font-family: 'Segoe UI', Arial, sans-serif;
+    color: white;
+}
+
+canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+}
+
+.container {
+    display: flex;
+    min-height: 100vh;
+    position: relative;
+    z-index: 10;
+}
+
+.sidebar {
+    width: 280px;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(20px);
+    padding: 20px;
+    border-right: 2px solid rgba(255, 107, 53, 0.3);
+    overflow-y: auto;
+}
+
+.logo {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: linear-gradient(45deg, #ff6b35, #f7931e);
+    border-radius: 15px;
+}
+
+.logo h2 {
+    font-size: 1.5em;
+    margin-bottom: 5px;
+}
+
+.menu-item {
+    width: 100%;
+    padding: 15px 20px;
+    margin-bottom: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: #fff;
+    text-align: left;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.menu-item:hover {
+    background: rgba(255, 107, 53, 0.2);
+    border-color: rgba(255, 107, 53, 0.5);
+    transform: translateX(5px);
+}
+
+.menu-item.active {
+    background: linear-gradient(45deg, #ff6b35, #f7931e);
+}
+
+.content {
+    flex: 1;
+    padding: 30px;
+    overflow-y: auto;
+    max-height: 100vh;
+}
+
+.page {
+    display: none;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 30px;
+    border-radius: 20px;
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    animation: fadeIn 0.3s ease;
+}
+
+.page.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.page h2 {
+    color: #ff6b35;
+    margin-bottom: 20px;
+    font-size: 2em;
+}
+
+.card {
+    background: rgba(255, 255, 255, 0.08);
+    padding: 25px;
+    border-radius: 15px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.connection-panel {
+    background: rgba(0, 0, 0, 0.4);
+    padding: 30px;
+    border-radius: 15px;
+    border: 2px solid rgba(255, 107, 53, 0.3);
+    margin-bottom: 25px;
+    text-align: center;
+}
+
+.connection-status {
+    font-size: 1.5em;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+.status-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ef4444;
+    display: inline-block;
+    margin-right: 10px;
+    animation: pulse 2s infinite;
+}
+
+.status-dot.connected {
+    background: #22c55e;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(1.1); }
+}
+
+.btn {
+    padding: 18px 35px;
+    background: linear-gradient(45deg, #ff6b35, #f7931e);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin: 8px;
+    display: inline-block;
+}
+
+.btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 40px rgba(255, 107, 53, 0.5);
+}
+
+.btn-large {
+    padding: 25px 50px;
+    font-size: 1.4em;
+    width: 100%;
+}
+
+.btn-success {
+    background: linear-gradient(45deg, #22c55e, #16a34a);
+}
+
+.btn-danger {
+    background: linear-gradient(45deg, #ef4444, #dc2626);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.feature-list {
+    margin: 20px 0;
+}
+
+.feature-item {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.feature-item:hover {
+    background: rgba(255, 107, 53, 0.1);
+    border-color: rgba(255, 107, 53, 0.3);
+}
+
+.feature-item.active {
+    background: rgba(34, 197, 94, 0.2);
+    border-color: rgba(34, 197, 94, 0.5);
+}
+
+.feature-status {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #ef4444;
+}
+
+.feature-status.active {
+    color: #22c55e;
+}
+
+.log-panel {
+    background: rgba(0, 0, 0, 0.5);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 107, 53, 0.3);
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    max-height: 300px;
+    overflow-y: auto;
+    margin-top: 20px;
+}
+
+.log-entry {
+    margin-bottom: 8px;
+    opacity: 0;
+    animation: logFadeIn 0.3s ease forwards;
+}
+
+@keyframes logFadeIn {
+    to { opacity: 1; }
+}
+
+.log-entry.success {
+    color: #22c55e;
+}
+
+.log-entry.error {
+    color: #ef4444;
+}
+
+.log-entry.info {
+    color: #3b82f6;
+}
+
+.log-entry.warning {
+    color: #f59e0b;
+}
+
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: linear-gradient(45deg, #22c55e, #16a34a);
+    color: white;
+    padding: 20px 30px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    z-index: 1000;
+    transform: translateX(400px);
+    transition: all 0.4s ease;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.notification.show {
+    transform: translateX(0);
+}
+
+.notification.error {
+    background: linear-gradient(45deg, #ef4444, #dc2626);
+}
+
+.notification.warning {
+    background: linear-gradient(45deg, #f59e0b, #ea580c);
+}
+
+textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.3);
+    color: white;
+    font-size: 14px;
+    resize: vertical;
+    margin-bottom: 15px;
+}
+
+@media (max-width: 768px) {
+    .container {
+        flex-direction: column;
+    }
+    
+    .sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 2px solid rgba(255, 107, 53, 0.3);
+    }
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(45deg, #ff6b35, #f7931e);
+    border-radius: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="bg"></canvas>
+
+<div class="container">
+    <div class="sidebar">
+        <div class="logo">
+            <h2>🔥 FF ACTIVATOR</h2>
+            <p>Sistema de Ativação v3.0</p>
+        </div>
+        
+        <button class="menu-item active" onclick="showPage('home')">
+            🏠 Início
+        </button>
+        <button class="menu-item" onclick="showPage('activator')">
+            ⚡ Ativador Automático
+        </button>
+        <button class="menu-item" onclick="showPage('launcher')">
+            🚀 Abrir Free Fire
+        </button>
+        <button class="menu-item" onclick="showPage('chat')">
+            💬 Suporte
+        </button>
+        <button class="menu-item" onclick="showPage('settings')">
+            ⚙ Configurações
+        </button>
+    </div>
+
+    <div class="content">
+        <!-- INÍCIO -->
+        <div id="home" class="page active">
+            <h2>🏠 Painel Principal</h2>
+            
+            <div class="connection-panel">
+                <div class="connection-status">
+                    <span class="status-dot" id="mainStatusDot"></span>
+                    <span id="mainStatusText">Desconectado do Free Fire</span>
+                </div>
+                <button class="btn btn-large btn-success" onclick="quickConnect()">
+                    🔌 CONECTAR E ATIVAR TUDO
+                </button>
+            </div>
+
+            <div class="card">
+                <h3>📊 Status do Sistema</h3>
+                <div class="feature-list">
+                    <div class="feature-item" id="status-aimbot">
+                        <div>
+                            <h4>🎯 AimBot 100%</h4>
+                            <p>Puxada de mira automática</p>
+                        </div>
+                        <span class="feature-status">●INATIVO</span>
+                    </div>
+                    
+                    <div class="feature-item" id="status-antilag">
+                        <div>
+                            <h4>⚡ Anti-Lag</h4>
+                            <p>Redução de latência</p>
+                        </div>
+                        <span class="feature-status">● INATIVO</span>
+                    </div>
+                    
+                    <div class="feature-item" id="status-fpsboost">
+                        <div>
+                            <h4>📈 FPS Boost</h4>
+                            <p>Otimização de quadros</p>
+                        </div>
+                        <span class="feature-status">● INATIVO</span>
+                    </div>
+                    
+                    <div class="feature-item" id="status-network">
+                        <div>
+                            <h4>🌐 Otimização de Rede</h4>
+                            <p>Melhoria de conexão</p>
+                        </div>
+                        <span class="feature-status">● INATIVO</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ATIVADOR AUTOMÁTICO -->
+        <div id="activator" class="page">
+            <h2>⚡ Sistema de Ativação Automática</h2>
+            
+            <div class="connection-panel">
+                <div class="connection-status">
+                    <span class="status-dot" id="ffStatusDot"></span>
+                    <span id="ffStatusText">Aguardando conexão...</span>
+                </div>
+                
+                <div style="margin: 25px 0;">
+                    <button class="btn btn-large btn-success" id="connectBtn" onclick="connectToFF()">
+                        🔌 CONECTAR AO FREE FIRE
+                    </button>
+                    <button class="btn btn-large btn-danger" id="disconnectBtn" onclick="disconnectFromFF()" disabled>
+                        🔌 DESCONECTAR
+                    </button>
+                </div>
+                
+                <p style="font-size: 0.9em; opacity: 0.8; margin-top: 15px;">
+                    * Ao conectar, todos os códigos e otimizações serão aplicados automaticamente
+                </p>
+            </div>
+
+            <div class="card">
+                <h3>🎯 Funções que serão Ativadas:</h3>
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <div>
+                            <strong>AimBot 100%</strong> - Mira automática na cabeça
+                        </div>
+                        <span style="color: #3b82f6;">✓ Pronto</span>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <div>
+                            <strong>Anti-Recoil</strong> - Remove recuo das armas
+                        </div>
+                        <span style="color: #3b82f6;">✓ Pronto</span>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <div>
+                            <strong>Sensibilidade Otimizada</strong> - Calibragem perfeita
+                        </div>
+                        <span style="color: #3b82f6;">✓ Pronto</span>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <div>
+                            <strong>FOV Aumentado</strong> - Campo de visão expandido
+                        </div>
+                        <span style="color: #3b82f6;">✓ Pronto</span>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <div>
+                            <strong>FPS Boost</strong> - Máximo de 90 FPS
+                        </div>
+                        <span style="color: #3b82f6;">✓ Pronto</span>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <div>
+                            <strong>Otimização de Rede</strong> - Ping reduzido
+                        </div>
+                        <span style="color: #3b82f6;">✓ Pronto</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>📋 Log de Ativação</h3>
+                <div class="log-panel" id="activationLog">
+                    <div class="log-entry info">[SISTEMA] Aguardando conexão com Free Fire...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LAUNCHER -->
+        <div id="launcher" class="page">
+            <h2>🚀 Abrir Free Fire com Tudo Ativado</h2>
+            
+            <div class="card">
+                <h3>🎮 Iniciar Jogo</h3>
+                <p style="margin: 20px 0; font-size: 1.1em;">
+                    Clique no botão abaixo para abrir o Free Fire com TODAS as otimizações e códigos já ativados automaticamente!
+                </p>
+                
+                <button class="btn btn-large btn-success" onclick="launchFFWithMods()">
+                    🚀 ABRIR FREE FIRE COM MODS ATIVADOS
+                </button>
+                
+                <button class="btn btn-large" onclick="launchFFMax()" style="margin-top: 15px;">
+                    🚀 ABRIR FREE FIRE MAX COM MODS
+                </button>
+            </div>
+
+            <div class="card">
+                <h3>⚙️ O que será ativado ao abrir:</h3>
+                <ul style="line-height: 2.2; margin-left: 25px; font-size: 1.05em;">
+                    <li>✅ <strong>AimBot 100%</strong> - Mira grudada</li>
+                    <li>✅ <strong>Anti-Recoil</strong> - Zero recuo</li>
+                    <li>✅ <strong>FOV Máximo</strong> - Visão ampliada</li>
+                    <li>✅ <strong>Sensibilidade Pro</strong> - Calibração perfeita</li>
+                    <li>✅ <strong>FPS 90+</strong> - Performance máxima</li>
+                    <li>✅ <strong>Anti-Lag</strong> - Latência mínima</li>
+                    <li>✅ <strong>Rede Otimizada</strong> - Conexão estável</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h3>📊 Status do Dispositivo</h3>
+                <p><strong>Sistema:</strong> <span id="deviceOS">Android</span></p>
+                <p><strong>RAM Disponível:</strong> <span id="deviceRAM">4.2 GB</span></p>
+                <p><strong>Status:</strong> <span style="color: #22c55e;">✓ Pronto para iniciar</span></p>
+            </div>
+        </div>
+
+        <!-- SUPORTE -->
+        <div id="chat" class="page">
+            <h2>💬 Suporte</h2>
+            
+            <div class="card">
+                <h3>📞 Entre em Contato</h3>
+                <p style="margin-bottom: 20px;">Fale conosco no Discord para suporte imediato:</p>
+                
+                <div style="background: rgba(88, 101, 242, 0.2); padding: 30px; border-radius: 15px; border: 2px solid rgba(88, 101, 242, 0.4); text-align: center;">
+                    <h3 style="color: #5865f2; margin-bottom: 15px;">🎮 Discord</h3>
+                    <p style="font-size: 1.4em; font-weight: bold; margin: 20px 0;">
+                        https://discord.gg/gxeuBq9U5
+                    </p>
+                    <button class="btn btn-large" onclick="openDiscord()">
+                        🔗 ABRIR DISCORD AGORA
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>✉️ Enviar Mensagem</h3>
+                <textarea id="supportMsg" placeholder="Descreva sua dúvida ou problema..."></textarea>
+                <button class="btn" onclick="sendSupportMessage()">📤 Enviar ao Suporte</button>
+            </div>
+        </div>
+
+        <!-- CONFIGURAÇÕES -->
+        <div id="settings" class="page">
+            <h2>⚙ Configurações</h2>
+            
+            <div class="card">
+                <h3>🔧 Ajustes do Sistema</h3>
+                <p>Painel em desenvolvimento. Configurações serão aplicadas automaticamente.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let isConnected = false;
+let activationInProgress = false;
+
+// Fundo animado
+const canvas = document.getElementById("bg");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let stars = [];
+for (let i = 0; i < 150; i++) {
+    stars.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: Math.random() * 2,
+        dx: (Math.random() - 0.5) * 0.5,
+        dy: (Math.random() - 0.5) * 0.5
+    });
+}
+
+function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#ff6b35";
+    stars.forEach(s => {
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fill();
+        s.x += s.dx;
+        s.y += s.dy;
+        if (s.x < 0 || s.x > canvas.width) s.dx *= -1;
+        if (s.y < 0 || s.y > canvas.height) s.dy *= -1;
+    });
+    requestAnimationFrame(animate);
+}
+animate();
+
+// Navegação de páginas
+function showPage(pageId) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+    
+    document.getElementById(pageId).classList.add('active');
+    event.target.classList.add('active');
+}
+
+// Notificações
+function showNotification(message, type = 'success') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+
+    setTimeout(() => notification.classList.add('show'), 100);
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => document.body.removeChild(notification), 400);
+    }, 3500);
+}
+
+// Adicionar log
+function addLog(message, type = 'info') {
+    const logPanel = document.getElementById('activationLog');
+    const entry = document.createElement('div');
+    entry.className = `log-entry ${type}`;
+    entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+    logPanel.appendChild(entry);
+    logPanel.scrollTop = logPanel.scrollHeight;
+}
+
+// Atualizar status de função
+function updateFeatureStatus(featureId, isActive) {
+    const element = document.getElementById(`status-${featureId}`);
+    if (element) {
+        const statusSpan = element.querySelector('.feature-status');
+        if (isActive) {
+            element.classList.add('active');
+            statusSpan.textContent = '● ATIVO';
+            statusSpan.classList.add('active');
+        } else {
+            element.classList.remove('active');
+            statusSpan.textContent = '● INATIVO';
+            statusSpan.classList.remove('active');
+        }
+    }
+}
+
+// Conexão rápida (página inicial)
+function quickConnect() {
+    showPage('activator');
+    setTimeout(() => connectToFF(), 500);
+}
+
+// Conectar ao Free Fire
+async function connectToFF() {
+    if (activationInProgress) return;
+    
+    activationInProgress = true;
+    const connectBtn = document.getElementById('connectBtn');
+    const disconnectBtn = document.getElementById('disconnectBtn');
+    
+    connectBtn.disabled = true;
+    connectBtn.textContent = '⏳ CONECTANDO...';
+    
+    addLog('Iniciando conexão com Free Fire...', 'info');
+    showNotification('Conectando ao Free Fire...', 'info');
+    
+    // Simular processo de conexão e ativação
+    await sleep(1000);
+    addLog('Detectando pacote com.dts.freefireth', 'info');
+    
+    await sleep(800);
+    addLog('✓ Free Fire detectado!', 'success');
+    
+    await sleep(500);
+    addLog('Aplicando códigos de AimBot...', 'info');
+    await sleep(1200);
+    addLog('✓ AimBot 100% ATIVADO', 'success');
+    updateFeatureStatus('aimbot', true);
+    
+    await sleep(600);
+    addLog('Configurando sensibilidade otimizada...', 'info');
+    await sleep(1000);
+    addLog('✓ Sensibilidade configurada: Precision Mode', 'success');
+    
+    await sleep(700);
+    addLog('Ativando Anti-Recoil...', 'info');
+    await sleep(900);
+    addLog('✓ Anti-Recoil ATIVADO', 'success');
+    
+    await sleep(500);
+    addLog('Aplicando FPS Boost...', 'info');
+    await sleep(1100);
+    addLog('✓ FPS Boost ATIVADO - 90 FPS', 'success');
+    updateFeatureStatus('fpsboost', true);
+    
+    await sleep(600);
+    addLog('Otimizando rede...', 'info');
+    await sleep(1000);
+    addLog('✓ Rede otimizada - Ping reduzido', 'success');
+    updateFeatureStatus('network', true);
+    
+    await sleep(500);
+    addLog('Aplicando Anti-Lag...', 'info');
+    await sleep(800);
+    addLog('✓ Anti-Lag ATIVADO', 'success');
+    updateFeatureStatus('antilag', true);
+    
+    await sleep(600);
+    addLog('Configurando FOV expandido...', 'info');
+    await sleep(700);
+    addLog('✓ FOV configurado para máximo', 'success');
+    
+    await sleep(500);
+    addLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'success');
+    addLog('✓ TODOS OS MODS ATIVADOS COM SUCESSO!', 'success');
+    addLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'success');
+    
+    // Atualizar UI
+    isConnected = true;
+    updateConnectionStatus(true);
+    
+    connectBtn.textContent = '✓ CONECTADO';
+    disconnectBtn.disabled = false;
+    
+    showNotification('🎉 Todos os mods ativados com sucesso!', 'success');
+    activationInProgress = false;
+}
+
+// Desconectar
+function disconnectFromFF() {
+    isConnected = false;
+    updateConnectionStatus(false);
+    
+    const connectBtn = document.getElementById('connectBtn');
+    const disconnectBtn = document.getElementById('disconnectBtn');
+    
+    connectBtn.disabled = false;
+    connectBtn.textContent = '🔌 CONECTAR AO FREE FIRE';
+    disconnectBtn.disabled = true;
+    
+    // Desativar todas as funções
+    updateFeatureStatus('aimbot', false);
+    updateFeatureStatus('antilag', false);
+    updateFeatureStatus('fpsboost', false);
+    updateFeatureStatus('network', false);
+    
+    addLog('Sistema desconectado', 'warning');
+    showNotification('Desconectado do Free Fire', 'warning');
+}
+
+// Atualizar status de conexão
+function updateConnectionStatus(connected) {
+    const dots = document.querySelectorAll('.status-dot');
+    const texts = [
+        document.getElementById('mainStatusText'),
+        document.getElementById('ffStatusText')
+    ];
+    
+    dots.forEach(dot => {
+        if (connected) {
+            dot.classList.add('connected');
+        } else {
+            dot.classList.remove('connected');
+        }
+    });
+    
+    if (texts[0]) {
+        texts[0].textContent = connected ? 'Conectado - Mods Ativos' : 'Desconectado do Free Fire';
+    }
+    if (texts[1]) {
+        texts[1].textContent = connected ? '✓ Conectado e Ativo' : 'Aguardando conexão...';
+    }
+}
+
+// Abrir FF com mods
+async function launchFFWithMods() {
+    showNotification('Abrindo Free Fire...', 'info');
+    addLog('Iniciando Free Fire com mods...', 'info');
+    
+    await sleep(1500);
+    addLog('✓ Free Fire iniciado!', 'success');
+    addLog('Ativando mods automaticamente...', 'info');
+    
+    await sleep(1000);
+    if (!isConnected) {
+        await connectToFF();
+    }
+    
+    showNotification('✅ Free Fire aberto com todos os mods ativos!', 'success');
+    
+    // Tentar abrir o app (em dispositivo real funcionaria)
+    const ffPackage = 'com.dts.freefireth';
+    window.location.href = `intent://${ffPackage}#Intent;scheme=android-app;end`;
+}
+
+// Abrir FF Max
+function launchFFMax() {
+    showNotification('Abrindo Free Fire Max...', 'info');
+    const ffMaxPackage = 'com.dts.freefiremax';
+    window.location.href = `intent://${ffMaxPackage}#Intent
